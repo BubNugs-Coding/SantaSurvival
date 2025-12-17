@@ -91,11 +91,12 @@ export default class TitleScene extends Phaser.Scene {
 
             // Leaderboard panel (right side, alongside buttons) + name label above it
             const panelW = 300;
-            const panelH = 240;
+            // Enough height for header + 10 rows (avoid the box cutting off entries)
+            const panelH = 340;
             const pad = 24;
             const panelRight = w - pad;
             // Place vertically near the buttons so it reads as a "menu sidebar"
-            const panelBottom = Math.min(h - pad, Math.floor(h * 0.78));
+            const panelBottom = Math.min(h - pad, Math.floor(h * 0.80));
 
             this.nameText = this.add.text(panelRight, panelBottom - panelH - 18, 'Name: (click to set)', {
                 fontSize: '20px',
