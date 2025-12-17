@@ -33,9 +33,9 @@ export default class TitleScene extends Phaser.Scene {
         const groundH = h - skyH;
 
         // Sky base + subtle vertical gradient
-        this.add.rectangle(0, 0, w, skyH, 0x071022).setOrigin(0);
-        this.add.rectangle(0, 0, w, skyH * 0.72, 0x102a4a, 0.22).setOrigin(0);
-        this.add.rectangle(0, 0, w, skyH * 0.45, 0x1a3a66, 0.12).setOrigin(0);
+        this.add.rectangle(0, 0, w, skyH, 0x0b2a57).setOrigin(0);
+        this.add.rectangle(0, 0, w, skyH * 0.72, 0x1f63b5, 0.18).setOrigin(0);
+        this.add.rectangle(0, 0, w, skyH * 0.42, 0x5aa7ff, 0.10).setOrigin(0);
 
         // Snow ground (brighter + slightly tinted horizon)
         this.add.rectangle(0, skyH, w, groundH, 0xf5fbff).setOrigin(0);
@@ -67,30 +67,6 @@ export default class TitleScene extends Phaser.Scene {
             groundSpeck.fillCircle(x, y, r);
         }
 
-        // Snowfall (particles) behind UI
-        if (!this.textures.exists('snowflake')) {
-            const g = this.make.graphics({ x: 0, y: 0, add: false });
-            g.fillStyle(0xffffff, 1);
-            g.fillCircle(4, 4, 3);
-            g.generateTexture('snowflake', 8, 8);
-            g.destroy();
-        }
-
-        const particles = this.add.particles(0, 0, 'snowflake', {
-            x: { min: -30, max: w + 30 },
-            y: { min: -20, max: -5 },
-            lifespan: { min: 3500, max: 6500 },
-            quantity: 3,
-            frequency: 22,
-            speedY: { min: 80, max: 220 },
-            speedX: { min: -40, max: 40 },
-            scale: { min: 0.35, max: 1.0 },
-            alpha: { min: 0.35, max: 0.9 },
-            rotate: { min: 0, max: 180 },
-            blendMode: 'NORMAL'
-        });
-        particles.setDepth(1);
-
         // Title
         this.add.text(w / 2, h * 0.22, 'SANTA SURVIVAL', {
             fontSize: '72px',
@@ -98,14 +74,14 @@ export default class TitleScene extends Phaser.Scene {
             fontStyle: 'bold',
             stroke: '#000',
             strokeThickness: 10
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setDepth(100);
 
         this.add.text(w / 2, h * 0.31, 'Deliver presents. Dodge the night.', {
             fontSize: '24px',
             fill: '#d6e6ff',
             stroke: '#000',
             strokeThickness: 6
-        }).setOrigin(0.5).setAlpha(0.95);
+        }).setOrigin(0.5).setAlpha(0.95).setDepth(100);
 
         // Leaderboard panel (bottom-right) + name label above it
         const panelW = 420;
@@ -119,7 +95,7 @@ export default class TitleScene extends Phaser.Scene {
             fill: '#ffffff',
             stroke: '#000',
             strokeThickness: 6
-        }).setOrigin(1, 0.5).setAlpha(0.95);
+        }).setOrigin(1, 0.5).setAlpha(0.95).setDepth(100);
         this.nameText.setInteractive({ useHandCursor: true });
         this.nameText.on('pointerdown', async () => {
             const { getPlayerName, setPlayerName } = await import('../services/leaderboard.js');
@@ -136,7 +112,8 @@ export default class TitleScene extends Phaser.Scene {
         this.leaderboardPanel = this.add
             .rectangle(panelX, panelY, panelW, panelH, 0x000000, 0.25)
             .setOrigin(1, 1)
-            .setStrokeStyle(2, 0xffffff, 0.12);
+            .setStrokeStyle(2, 0xffffff, 0.12)
+            .setDepth(100);
 
         this.leaderboardTitle = this.add.text(panelX - panelW / 2, panelY - panelH + 20, 'LEADERBOARD (Top 10)', {
             fontSize: '20px',
@@ -144,7 +121,7 @@ export default class TitleScene extends Phaser.Scene {
             fontStyle: 'bold',
             stroke: '#000',
             strokeThickness: 6
-        }).setOrigin(0.5, 0.5).setAlpha(0.95);
+        }).setOrigin(0.5, 0.5).setAlpha(0.95).setDepth(100);
 
         this.leaderboardText = this.add.text(panelX - panelW / 2, panelY - panelH + 44, 'Loading...', {
             fontSize: '18px',
@@ -152,7 +129,7 @@ export default class TitleScene extends Phaser.Scene {
             stroke: '#000',
             strokeThickness: 4,
             lineSpacing: 6
-        }).setOrigin(0.5, 0).setAlpha(0.95);
+        }).setOrigin(0.5, 0).setAlpha(0.95).setDepth(100);
 
         const makeButton = ({ y, label, enabled, onClick }) => {
             const bw = 420;
@@ -160,7 +137,7 @@ export default class TitleScene extends Phaser.Scene {
             const bg = enabled ? 0x1f6feb : 0x3a3a3a;
             const alpha = enabled ? 0.95 : 0.35;
 
-            const r = this.add.rectangle(w / 2, y, bw, bh, bg, alpha).setOrigin(0.5);
+            const r = this.add.rectangle(w / 2, y, bw, bh, bg, alpha).setOrigin(0.5).setDepth(100);
             r.setStrokeStyle(3, 0xffffff, enabled ? 0.35 : 0.12);
 
             const fontSize = label.length > 16 ? '22px' : '32px';
@@ -172,7 +149,7 @@ export default class TitleScene extends Phaser.Scene {
                 strokeThickness: 6,
                 align: 'center',
                 wordWrap: { width: bw - 30, useAdvancedWrap: true }
-            }).setOrigin(0.5).setAlpha(enabled ? 1 : 0.5);
+            }).setOrigin(0.5).setAlpha(enabled ? 1 : 0.5).setDepth(100);
 
             if (enabled) {
                 r.setInteractive({ useHandCursor: true });
@@ -244,7 +221,34 @@ export default class TitleScene extends Phaser.Scene {
             fill: '#cbd5e1',
             stroke: '#000',
             strokeThickness: 5
-        }).setOrigin(0, 0.5).setAlpha(0.85);
+        }).setOrigin(0, 0.5).setAlpha(0.85).setDepth(100);
+
+        // Snowfall (particles) behind UI - fail-safe so the menu never breaks
+        try {
+            if (!this.textures.exists('snowflake')) {
+                const g = this.make.graphics({ x: 0, y: 0, add: false });
+                g.fillStyle(0xffffff, 1);
+                g.fillCircle(4, 4, 3);
+                g.generateTexture('snowflake', 8, 8);
+                g.destroy();
+            }
+
+            const particles = this.add.particles(0, 0, 'snowflake', {
+                x: { min: -30, max: w + 30 },
+                y: { min: -20, max: -5 },
+                lifespan: { min: 3500, max: 6500 },
+                quantity: 3,
+                frequency: 24,
+                speedY: { min: 90, max: 240 },
+                speedX: { min: -50, max: 50 },
+                scale: { min: 0.35, max: 1.0 },
+                alpha: { min: 0.35, max: 0.9 },
+                rotate: { min: 0, max: 180 }
+            });
+            particles.setDepth(50);
+        } catch (e) {
+            // ignore (menu should still render)
+        }
 
         // Initialize name display + fetch leaderboard
         this.refreshNameLabel();
