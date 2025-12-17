@@ -288,7 +288,7 @@ export default class TitleScene extends Phaser.Scene {
     async refreshLeaderboard() {
         try {
             const { fetchTopScores } = await import('../services/leaderboard.js');
-            const rows = await fetchTopScores({ limit: 10 });
+            const rows = await fetchTopScores({ limit: 10, excludeModes: ['kin'] });
             const lines = rows.map((r, i) => `${String(i + 1).padStart(2, ' ')}. ${String(r.name).slice(0, 24)} — ${r.score}`);
             this.leaderboardText?.setText(lines.length ? lines.join('\n') : 'No scores yet.');
         } catch (e) {

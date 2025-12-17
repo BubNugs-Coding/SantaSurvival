@@ -47,12 +47,21 @@ export function setPlayerName(name) {
     return clean;
 }
 
-export async function fetchTopScores({ limit = 10 } = {}) {
+export async function fetchTopScores({ limit = 10, excludeModes = [] } = {}) {
     const { fsMod } = await loadFirebase();
     const db = await initLeaderboard();
 
     const scoresRef = fsMod.collection(db, 'scores');
-    const q = fsMod.query(scoresRef, fsMod.orderBy('score', 'desc'), fsMod.limit(Math.max(1, Math.min(50, limit))));
+    const desired = Math.max(1, Math.min(50, Number(limit) || 10));
+    const exclude = Array.isArray(excludeModes) ? excludeModes.filter(Boolean).map(String) : [];
+    // If we're excluding some modes (e.g. hide KIN), we fetch more rows and filter client-side.
+    // This avoids Firestore composite index requirements for "!=" queries.
+    const scanLimit = Math.max(
+        desired,
+        exclude.length ? Math.min(50, Math.max(desired * 5, 20)) : desired
+    );
+
+    const q = fsMod.query(scoresRef, fsMod.orderBy('score', 'desc'), fsMod.limit(scanLimit));
     const snap = await fsMod.getDocs(q);
     const out = [];
     snap.forEach((doc) => {
@@ -64,7 +73,11 @@ export async function fetchTopScores({ limit = 10 } = {}) {
             createdAt: d.createdAt || null
         });
     });
-    return out;
+    if (exclude.length) {
+        const filtered = out.filter((r) => !exclude.includes(r.mode));
+        return filtered.slice(0, desired);
+    }
+    return out.slice(0, desired);
 }
 
 export async function submitScoreOnce({ name, score, mode } = {}) {
