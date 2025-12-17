@@ -89,12 +89,13 @@ export default class TitleScene extends Phaser.Scene {
                 strokeThickness: 6
             }).setOrigin(0.5).setAlpha(0.95).setDepth(100);
 
-            // Leaderboard panel (bottom-right) + name label above it
-            const panelW = 420;
-            const panelH = 220;
-            const pad = 26;
+            // Leaderboard panel (right side, alongside buttons) + name label above it
+            const panelW = 300;
+            const panelH = 240;
+            const pad = 24;
             const panelRight = w - pad;
-            const panelBottom = h - pad;
+            // Place vertically near the buttons so it reads as a "menu sidebar"
+            const panelBottom = Math.min(h - pad, Math.floor(h * 0.78));
 
             this.nameText = this.add.text(panelRight, panelBottom - panelH - 18, 'Name: (click to set)', {
                 fontSize: '20px',
@@ -121,21 +122,24 @@ export default class TitleScene extends Phaser.Scene {
                 .setStrokeStyle(2, 0xffffff, 0.12)
                 .setDepth(100);
 
-            this.leaderboardTitle = this.add.text(panelX - panelW / 2, panelY - panelH + 20, 'LEADERBOARD (Top 10)', {
+            const panelLeft = panelX - panelW;
+            const textPad = 16;
+
+            this.leaderboardTitle = this.add.text(panelLeft + textPad, panelY - panelH + 20, 'LEADERBOARD (Top 10)', {
                 fontSize: '20px',
                 fill: '#ffffff',
                 fontStyle: 'bold',
                 stroke: '#000',
                 strokeThickness: 6
-            }).setOrigin(0.5, 0.5).setAlpha(0.95).setDepth(100);
+            }).setOrigin(0, 0.5).setAlpha(0.95).setDepth(100);
 
-            this.leaderboardText = this.add.text(panelX - panelW / 2, panelY - panelH + 44, 'Loading...', {
+            this.leaderboardText = this.add.text(panelLeft + textPad, panelY - panelH + 44, 'Loading...', {
                 fontSize: '18px',
                 fill: '#d6e6ff',
                 stroke: '#000',
                 strokeThickness: 4,
                 lineSpacing: 6
-            }).setOrigin(0.5, 0).setAlpha(0.95).setDepth(100);
+            }).setOrigin(0, 0).setAlpha(0.95).setDepth(100);
 
             const makeButton = ({ y, label, enabled, onClick }) => {
                 const bw = 420;
