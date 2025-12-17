@@ -320,6 +320,29 @@ export default class GameScene extends Phaser.Scene {
             .setDepth(1001)
             .setVisible(false);
 
+        // Pause menu button: Return to menu
+        this.pauseMenuBtnBg = this.add
+            .rectangle(w / 2, h / 2 + 140, 320, 56, 0x111827, 0.85)
+            .setOrigin(0.5)
+            .setDepth(1002)
+            .setStrokeStyle(3, 0xffffff, 0.25)
+            .setVisible(false);
+        this.pauseMenuBtnText = this.add
+            .text(w / 2, h / 2 + 140, 'RETURN TO MENU', {
+                fontSize: '22px',
+                fill: '#ffffff',
+                fontStyle: 'bold',
+                stroke: '#000',
+                strokeThickness: 6
+            })
+            .setOrigin(0.5)
+            .setDepth(1003)
+            .setVisible(false);
+        this.pauseMenuBtnBg.setInteractive({ useHandCursor: true });
+        this.pauseMenuBtnBg.on('pointerdown', () => this.returnToMenuFromPause());
+        this.pauseMenuBtnBg.on('pointerover', () => this.pauseMenuBtnBg?.setAlpha?.(0.95));
+        this.pauseMenuBtnBg.on('pointerout', () => this.pauseMenuBtnBg?.setAlpha?.(0.85));
+
         // Tutorial tooltip overlay (auto-pauses for a few seconds)
         this.tooltipBackdrop = this.add
             .rectangle(0, 0, w, h, 0x000000, 0.45)
@@ -2661,6 +2684,8 @@ export default class GameScene extends Phaser.Scene {
         const showManual = this.manualPaused && !this.tooltipPaused && !showDevMenu;
         if (this.pauseBackdrop) this.pauseBackdrop.setVisible(showManual);
         if (this.pauseText) this.pauseText.setVisible(showManual);
+        if (this.pauseMenuBtnBg) this.pauseMenuBtnBg.setVisible(showManual);
+        if (this.pauseMenuBtnText) this.pauseMenuBtnText.setVisible(showManual);
         if (this.tooltipBackdrop) this.tooltipBackdrop.setVisible(this.tooltipPaused);
         if (this.tooltipPanel) this.tooltipPanel.setVisible(this.tooltipPaused);
         if (this.tooltipText) this.tooltipText.setVisible(this.tooltipPaused);
@@ -2695,6 +2720,27 @@ export default class GameScene extends Phaser.Scene {
             this.maybeStartPendingMusic();
             this.updateMusic?.(true);
         }
+    }
+
+    returnToMenuFromPause() {
+        // Only intended for the manual (Space) pause menu.
+        try {
+            this.manualPaused = false;
+            this.tooltipPaused = false;
+            this.gamePaused = false;
+            this.syncPauseState();
+        } catch (e) {
+            // ignore
+        }
+
+        // Stop audio immediately; TitleScene also stops all on create.
+        try {
+            this.sound?.stopAll?.();
+        } catch (e) {
+            // ignore
+        }
+
+        this.scene.start('TitleScene');
     }
 
     showTooltip(message, durationMs = 2000) {
