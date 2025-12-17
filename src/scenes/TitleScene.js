@@ -28,9 +28,68 @@ export default class TitleScene extends Phaser.Scene {
         this.leaderboardError = '';
         this.leaderboardRows = [];
 
-        // Background
-        this.add.rectangle(0, 0, w, h, 0x0b1020).setOrigin(0);
-        this.add.rectangle(0, h * 0.62, w, h * 0.38, 0x14243a).setOrigin(0);
+        // Background (sky + snow ground)
+        const skyH = Math.floor(h * 0.66);
+        const groundH = h - skyH;
+
+        // Sky base + subtle vertical gradient
+        this.add.rectangle(0, 0, w, skyH, 0x071022).setOrigin(0);
+        this.add.rectangle(0, 0, w, skyH * 0.72, 0x102a4a, 0.22).setOrigin(0);
+        this.add.rectangle(0, 0, w, skyH * 0.45, 0x1a3a66, 0.12).setOrigin(0);
+
+        // Snow ground (brighter + slightly tinted horizon)
+        this.add.rectangle(0, skyH, w, groundH, 0xf5fbff).setOrigin(0);
+        this.add.rectangle(0, skyH, w, Math.max(18, groundH * 0.22), 0xd9ecff, 0.65).setOrigin(0);
+
+        // Soft boundary drift between sky and snow
+        const boundary = this.add.graphics();
+        boundary.fillStyle(0xffffff, 0.08);
+        boundary.beginPath();
+        boundary.moveTo(0, skyH);
+        const waveAmp = 10;
+        const waveLen = 120;
+        for (let x = 0; x <= w + waveLen; x += waveLen) {
+            boundary.quadraticCurveTo(x + waveLen * 0.25, skyH - waveAmp, x + waveLen * 0.5, skyH);
+            boundary.quadraticCurveTo(x + waveLen * 0.75, skyH + waveAmp, x + waveLen, skyH);
+        }
+        boundary.lineTo(w, skyH + 22);
+        boundary.lineTo(0, skyH + 22);
+        boundary.closePath();
+        boundary.fillPath();
+
+        // Light snow texture on the ground (tiny speckles)
+        const groundSpeck = this.add.graphics();
+        groundSpeck.fillStyle(0xffffff, 0.08);
+        for (let i = 0; i < Math.floor(w * 0.08); i++) {
+            const x = Math.random() * w;
+            const y = skyH + Math.random() * groundH;
+            const r = 1 + Math.random() * 2;
+            groundSpeck.fillCircle(x, y, r);
+        }
+
+        // Snowfall (particles) behind UI
+        if (!this.textures.exists('snowflake')) {
+            const g = this.make.graphics({ x: 0, y: 0, add: false });
+            g.fillStyle(0xffffff, 1);
+            g.fillCircle(4, 4, 3);
+            g.generateTexture('snowflake', 8, 8);
+            g.destroy();
+        }
+
+        const particles = this.add.particles(0, 0, 'snowflake', {
+            x: { min: -30, max: w + 30 },
+            y: { min: -20, max: -5 },
+            lifespan: { min: 3500, max: 6500 },
+            quantity: 3,
+            frequency: 22,
+            speedY: { min: 80, max: 220 },
+            speedX: { min: -40, max: 40 },
+            scale: { min: 0.35, max: 1.0 },
+            alpha: { min: 0.35, max: 0.9 },
+            rotate: { min: 0, max: 180 },
+            blendMode: 'NORMAL'
+        });
+        particles.setDepth(1);
 
         // Title
         this.add.text(w / 2, h * 0.22, 'SANTA SURVIVAL', {
