@@ -679,6 +679,19 @@ export default class GameScene extends Phaser.Scene {
         this.input.once('pointerdown', () => this.startMusicIfNeeded());
         this.input.keyboard?.once('keydown', () => this.startMusicIfNeeded());
 
+        // Keep audio awake during play (some browsers suspend WebAudio until a user-activation event fires).
+        // We hook into frequent input events so we can recover without requiring the player to pause/resume.
+        this._lastAudioWakeAt = 0;
+        const wake = () => {
+            const now = this.time?.now || 0;
+            if (now - (this._lastAudioWakeAt || 0) < 500) return; // throttle
+            this._lastAudioWakeAt = now;
+            this.ensureAudioRunning?.();
+        };
+        this.input.on?.('pointermove', wake);
+        this.input.on?.('pointerdown', wake);
+        this.input.keyboard?.on?.('keydown', wake);
+
         // If we came from the title screen button, start immediately (audio should be unlocked already)
         if (this._startMusicOnCreate) {
             // Don't start during the initial tooltip pause; queue it and start on resume.
