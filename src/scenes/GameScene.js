@@ -1125,7 +1125,7 @@ export default class GameScene extends Phaser.Scene {
             }
         }
         // If jet encounter was playing and jets are gone, stop immediately
-        if (this.jetEncounterMusic?.isPlaying && (this.jets?.length || 0) === 0) {
+        if (this.jetEncounterMusic?.isPlaying && !this.hasAnyActiveJets()) {
             this.stopJetEncounterMusic();
         }
 
@@ -2421,7 +2421,7 @@ export default class GameScene extends Phaser.Scene {
         }
 
         // If that was the last active jet, stop encounter music immediately
-        if (this.jetEncounterMusic?.isPlaying && (this.jets?.length || 0) === 0) {
+        if (this.jetEncounterMusic?.isPlaying && !this.hasAnyActiveJets()) {
             this.stopJetEncounterMusic();
         }
     }
@@ -2879,7 +2879,7 @@ export default class GameScene extends Phaser.Scene {
         }
 
         // Jet encounter: stop once all jets are gone
-        if (this.jetEncounterActive && (this.jets?.length || 0) === 0) {
+        if (this.jetEncounterActive && !this.hasAnyActiveJets()) {
             this.stopJetEncounterMusic();
         }
 
@@ -2891,8 +2891,19 @@ export default class GameScene extends Phaser.Scene {
     }
 
     isAnyEncounterPlaying() {
-        // Use explicit flags (Phaser audio can occasionally report isPlaying=true even after a stop during fades)
-        return !!(this.jetEncounterActive || this.eliteEncounterActive);
+        // Use flags AND actual active entities so we don't get "stuck ducked" when arrays contain nulls.
+        return !!(
+            (this.jetEncounterActive && this.hasAnyActiveJets()) ||
+            (this.eliteEncounterActive && this.hasAnyActiveEliteJets())
+        );
+    }
+
+    hasAnyActiveJets() {
+        return (this.jets || []).some((j) => j?.sprite?.active);
+    }
+
+    hasAnyActiveEliteJets() {
+        return (this.eliteJets || []).some((j) => j?.sprite?.active);
     }
 
     switchBaseMusic(key) {
@@ -2999,7 +3010,7 @@ export default class GameScene extends Phaser.Scene {
         const krampusOverride = (!this.isKIN && this.biome === 'wasteland') || !!this.krampusMusic?.isPlaying;
         if (krampusOverride) return;
         // If regular jets are still active, resume their encounter music (elite had priority).
-        if ((this.jets?.length || 0) > 0) {
+        if (this.hasAnyActiveJets()) {
             // Keep base faded out; jet encounter will fade in.
             this.fadeSound(this.baseMusic, this.duckedBaseVol, 500);
             this.time.delayedCall(720, () => this.startJetEncounterMusic());
@@ -3451,7 +3462,7 @@ export default class GameScene extends Phaser.Scene {
             }
         }
         // If coal removed the last jet, stop encounter music right away
-        if (this.jetEncounterMusic?.isPlaying && (this.jets?.length || 0) === 0) {
+        if (this.jetEncounterMusic?.isPlaying && !this.hasAnyActiveJets()) {
             this.stopJetEncounterMusic();
         }
 
