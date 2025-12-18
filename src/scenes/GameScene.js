@@ -2786,6 +2786,19 @@ export default class GameScene extends Phaser.Scene {
         this.musicPausedByGame = false;
     }
 
+    pingAudioWake(times = 3) {
+        if (!this.sound) return;
+        if (this.gamePaused) return;
+        const n = Math.max(1, Math.min(6, Number(times) || 3));
+        const delays = [0, 180, 420, 800, 1200, 1600].slice(0, n);
+        for (const d of delays) {
+            this.time.delayedCall(d, () => {
+                if (this.gamePaused) return;
+                this.ensureAudioRunning?.();
+            });
+        }
+    }
+
     startMusicIfNeeded() {
         if (this.musicStarted) return;
         if (!this.sound) return;
@@ -2985,7 +2998,11 @@ export default class GameScene extends Phaser.Scene {
         });
         if (suppressBaseRestore) return;
         // Restore base once the encounter is actually gone (avoid restoring under elite encounter)
-        this.time.delayedCall(740, () => this.restoreBaseMusic());
+        this.time.delayedCall(740, () => {
+            // “Unpause pings”: nudge browser audio back awake after encounter clears
+            this.pingAudioWake?.(3);
+            this.restoreBaseMusic();
+        });
     }
 
     startEliteEncounterMusic() {
@@ -3031,7 +3048,10 @@ export default class GameScene extends Phaser.Scene {
             this.fadeSound(this.baseMusic, this.duckedBaseVol, 500);
             this.time.delayedCall(720, () => this.startJetEncounterMusic());
         } else {
-            this.time.delayedCall(740, () => this.restoreBaseMusic());
+            this.time.delayedCall(740, () => {
+                this.pingAudioWake?.(3);
+                this.restoreBaseMusic();
+            });
         }
     }
 
