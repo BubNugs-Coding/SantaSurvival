@@ -2329,6 +2329,7 @@ export default class GameScene extends Phaser.Scene {
             this.gameWon = true;
             // Unlock KIN
             try { this.registry?.set?.('ss_unlock_kin', true); } catch (e) {}
+            try { localStorage.setItem('ss_unlock_kin', 'true'); } catch (e) {}
             this.winBackdrop?.setVisible(true);
             this.winText?.setVisible(true);
 
@@ -2763,6 +2764,28 @@ export default class GameScene extends Phaser.Scene {
     // -----------------
     // Music helpers
     // -----------------
+    ensureAudioRunning() {
+        if (!this.sound) return;
+        // Never fight the pause/tooltip system.
+        if (this.gamePaused) return;
+        try {
+            // WebAudio context can get suspended; Space pause/resume wakes it up, but we want music transitions
+            // to be audible without requiring player interaction.
+            const ctx = this.sound.context;
+            if (ctx && ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+                ctx.resume().catch?.(() => {});
+            }
+        } catch (e) {
+            // ignore
+        }
+        try {
+            this.sound.resumeAll?.();
+        } catch (e) {
+            // ignore
+        }
+        this.musicPausedByGame = false;
+    }
+
     startMusicIfNeeded() {
         if (this.musicStarted) return;
         if (!this.sound) return;
@@ -2779,6 +2802,7 @@ export default class GameScene extends Phaser.Scene {
         }
 
         this.musicStarted = true;
+        this.ensureAudioRunning?.();
 
         // Create/reuse sounds (TitleScene may have already started base music)
         this.baseMusic = this.sound.get?.('music_santa') || this.sound.add('music_santa', { loop: true, volume: 0 });
@@ -2810,6 +2834,7 @@ export default class GameScene extends Phaser.Scene {
         if (!this.musicStarted) return;
         // While paused (tooltips/dev menu), don't start/stop tracks; pause system handles audio.
         if (!allowStart || this.gamePaused) return;
+        this.ensureAudioRunning?.();
 
         // Krampus overrides all other music in wasteland (225+)
         if (this.biome === 'wasteland') {
@@ -2821,12 +2846,9 @@ export default class GameScene extends Phaser.Scene {
                     });
                 }
             } else {
-            if (this.jetEncounterActive || this.jetEncounterMusic?.isPlaying) this.stopJetEncounterMusic(true);
-            if (this.eliteEncounterActive || this.eliteEncounterMusic?.isPlaying) this.stopEliteEncounterMusic(true);
-            // Fade out base entirely
-            if (this.baseMusic?.isPlaying) this.fadeSound(this.baseMusic, 0, 700);
-            this.ensureKrampusMusicPlaying(false);
-            return;
+                // Force-start Krampus, and hard-stop any other tracks so we never layer audio here.
+                this.forceStartKrampusMusic?.();
+                return;
             }
         } else {
             // Not in wasteland: ensure krampus music is stopped
@@ -2877,6 +2899,7 @@ export default class GameScene extends Phaser.Scene {
         if (!this.musicStarted) return;
         if (!this.sound) return;
         if (this.baseMusicKey === key) return;
+        this.ensureAudioRunning?.();
 
         const old = this.baseMusic;
         const oldKey = this.baseMusicKey;
@@ -2901,6 +2924,7 @@ export default class GameScene extends Phaser.Scene {
         if (!this.jetEncounterMusic) return;
         // Krampus overrides encounters
         if (this.biome === 'wasteland' || this.krampusMusic?.isPlaying) return;
+        this.ensureAudioRunning?.();
 
         // If elite encounter is playing, prioritize it
         if (this.eliteEncounterMusic?.isPlaying) return;
@@ -2926,8 +2950,13 @@ export default class GameScene extends Phaser.Scene {
         this.time.delayedCall(900, () => {
             try { if (this.jetEncounterMusic?.isPlaying) this.jetEncounterMusic.stop(); } catch (e) {}
         });
-        // Restore base if elite isn't playing
-        if (!suppressBaseRestore && !this.eliteEncounterActive) {
+        // Restore base if elite isn't playing and we're not in a Krampus-override state
+        const krampusOverride = (!this.isKIN && this.biome === 'wasteland') || !!this.krampusMusic?.isPlaying;
+        if (!suppressBaseRestore && !krampusOverride && !this.eliteEncounterActive) {
+            this.ensureAudioRunning?.();
+            if (this.baseMusic && !this.baseMusic.isPlaying) {
+                try { this.baseMusic.play({ loop: true, volume: 0 }); } catch (e) {}
+            }
             this.fadeSound(this.baseMusic, this.baseTargetVol, 900);
         }
     }
@@ -2937,6 +2966,7 @@ export default class GameScene extends Phaser.Scene {
         if (!this.eliteEncounterMusic) return;
         // Krampus overrides encounters
         if (this.biome === 'wasteland' || this.krampusMusic?.isPlaying) return;
+        this.ensureAudioRunning?.();
 
         // Elite encounter overrides jet encounter
         if (this.jetEncounterActive || this.jetEncounterMusic?.isPlaying) {
@@ -2966,12 +2996,18 @@ export default class GameScene extends Phaser.Scene {
             try { if (this.eliteEncounterMusic?.isPlaying) this.eliteEncounterMusic.stop(); } catch (e) {}
         });
         if (suppressResume) return;
+        const krampusOverride = (!this.isKIN && this.biome === 'wasteland') || !!this.krampusMusic?.isPlaying;
+        if (krampusOverride) return;
         // If regular jets are still active, resume their encounter music (elite had priority).
         if ((this.jets?.length || 0) > 0) {
             // Keep base faded out; jet encounter will fade in.
             this.fadeSound(this.baseMusic, this.duckedBaseVol, 500);
             this.time.delayedCall(720, () => this.startJetEncounterMusic());
         } else {
+            this.ensureAudioRunning?.();
+            if (this.baseMusic && !this.baseMusic.isPlaying) {
+                try { this.baseMusic.play({ loop: true, volume: 0 }); } catch (e) {}
+            }
             this.fadeSound(this.baseMusic, this.baseTargetVol, 900);
         }
     }
@@ -3231,6 +3267,7 @@ export default class GameScene extends Phaser.Scene {
             this.pendingKrampusStart = true;
             return;
         }
+        this.ensureAudioRunning?.();
 
         // Ensure the sound object exists
         if (!this.krampusMusic) {

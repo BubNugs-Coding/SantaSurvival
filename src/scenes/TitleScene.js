@@ -204,7 +204,19 @@ export default class TitleScene extends Phaser.Scene {
                 }
             });
 
-            const kinUnlocked = this.registry?.get?.('ss_unlock_kin') === true;
+            // Persisted unlock (local) + session unlock (registry)
+            let kinUnlocked = this.registry?.get?.('ss_unlock_kin') === true;
+            if (!kinUnlocked) {
+                try {
+                    kinUnlocked = localStorage.getItem('ss_unlock_kin') === 'true';
+                    if (kinUnlocked) {
+                        // Keep registry in sync for the session
+                        try { this.registry?.set?.('ss_unlock_kin', true); } catch (e) {}
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            }
 
             makeButton({
                 y: h * 0.64,
