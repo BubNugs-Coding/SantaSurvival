@@ -2906,6 +2906,28 @@ export default class GameScene extends Phaser.Scene {
         return (this.eliteJets || []).some((j) => j?.sprite?.active);
     }
 
+    restoreBaseMusic() {
+        // Don't restore base if Krampus is the active override, or if any encounter is active.
+        const krampusOverride = (!this.isKIN && this.biome === 'wasteland') || !!this.krampusMusic?.isPlaying;
+        if (krampusOverride) return;
+        if (this.isAnyEncounterPlaying()) return;
+
+        this.ensureAudioRunning?.();
+
+        // Ensure the correct base track is selected (forest vs santa)
+        const shouldForest = !this.isKIN && (this.biome === 'forest' || this.biome === 'wasteland');
+        const desiredKey = shouldForest ? 'music_forest' : 'music_santa';
+        if (this.baseMusicKey !== desiredKey) {
+            this.switchBaseMusic(desiredKey);
+            return; // switchBaseMusic will handle the fade in
+        }
+
+        if (this.baseMusic && !this.baseMusic.isPlaying) {
+            try { this.baseMusic.play({ loop: true, volume: 0 }); } catch (e) {}
+        }
+        this.fadeSound(this.baseMusic, this.baseTargetVol, 900);
+    }
+
     switchBaseMusic(key) {
         if (!this.musicStarted) return;
         if (!this.sound) return;
@@ -2961,15 +2983,9 @@ export default class GameScene extends Phaser.Scene {
         this.time.delayedCall(900, () => {
             try { if (this.jetEncounterMusic?.isPlaying) this.jetEncounterMusic.stop(); } catch (e) {}
         });
-        // Restore base if elite isn't playing and we're not in a Krampus-override state
-        const krampusOverride = (!this.isKIN && this.biome === 'wasteland') || !!this.krampusMusic?.isPlaying;
-        if (!suppressBaseRestore && !krampusOverride && !this.eliteEncounterActive) {
-            this.ensureAudioRunning?.();
-            if (this.baseMusic && !this.baseMusic.isPlaying) {
-                try { this.baseMusic.play({ loop: true, volume: 0 }); } catch (e) {}
-            }
-            this.fadeSound(this.baseMusic, this.baseTargetVol, 900);
-        }
+        if (suppressBaseRestore) return;
+        // Restore base once the encounter is actually gone (avoid restoring under elite encounter)
+        this.time.delayedCall(740, () => this.restoreBaseMusic());
     }
 
     startEliteEncounterMusic() {
@@ -3015,11 +3031,7 @@ export default class GameScene extends Phaser.Scene {
             this.fadeSound(this.baseMusic, this.duckedBaseVol, 500);
             this.time.delayedCall(720, () => this.startJetEncounterMusic());
         } else {
-            this.ensureAudioRunning?.();
-            if (this.baseMusic && !this.baseMusic.isPlaying) {
-                try { this.baseMusic.play({ loop: true, volume: 0 }); } catch (e) {}
-            }
-            this.fadeSound(this.baseMusic, this.baseTargetVol, 900);
+            this.time.delayedCall(740, () => this.restoreBaseMusic());
         }
     }
 
